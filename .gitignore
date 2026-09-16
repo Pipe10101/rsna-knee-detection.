@@ -1,0 +1,47 @@
+# Data — never commit; the 247 GB archive lives in ~/.cache/kagglehub
+data/
+data_subset/
+*.zip
+*.tar
+*.dcm
+*.npy
+
+# Model artifacts
+models/
+*.pt
+*.pth
+*.ckpt
+
+# Generated output
+results/
+submission*.csv
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Build artifacts: transfer bundles regenerated from src/ and scripts/
+*.tar.gz
+*.tgz
+
+# SlotKnee caches (large memmaps)
+cache/
+kaggle/slotknee_code/
+logs/
+
+# Kaggle kernel pull artifacts: caches, checkpoints and logs downloaded from Kaggle.
+# Large (15 GB+) and fully regenerable via kaggle_ops pull -- never commit them.
+kaggle/.logs/
+
+# push-models staging: 5 x 89 MB fold checkpoints + the student, rebuilt by
+# `kaggle_ops.py push-models` from models/<run>/ and mirrored to the slotknee-models dataset.
+kaggle/slotknee_models/
+

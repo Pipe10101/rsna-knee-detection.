@@ -1,0 +1,19 @@
+{
+  "id": "felipedeleon11/slotknee-ssl",
+  "title": "slotknee-ssl",
+  "code_file": "ssl_pretrain_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [
+    "felipedeleon11/slotknee-cache-g10t1"
+  ],
+  "model_sources": []
+}

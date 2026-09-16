@@ -1,0 +1,22 @@
+{
+  "id": "felipedeleon11/slotknee-train-final",
+  "title": "slotknee-train-final",
+  "code_file": "slotknee_train_final.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "kernel_sources": [
+    "felipedeleon11/slotknee-cache-g10t1-t35",
+    "felipedeleon11/slotknee-cache-g10t1"
+  ],
+  "model_sources": []
+}

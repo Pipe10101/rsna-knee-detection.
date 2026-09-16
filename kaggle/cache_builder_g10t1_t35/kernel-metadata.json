@@ -1,0 +1,19 @@
+{
+  "id": "felipedeleon11/slotknee-cache-g10t1-t35",
+  "title": "slotknee-cache-g10t1-t35",
+  "code_file": "cache_builder_g10t1_t35.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}

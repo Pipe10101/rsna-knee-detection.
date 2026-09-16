@@ -1,0 +1,25 @@
+{
+  "id": "felipedeleon11/slotknee-train-g10",
+  "id_no": 131647887,
+  "title": "slotknee-train-g10",
+  "code_file": "slotknee-train-g10.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "kernel_sources": [
+    "felipedeleon11/slotknee-cache-g10t1"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "model_sources": []
+}

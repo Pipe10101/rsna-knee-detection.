@@ -1,0 +1,33 @@
+{
+  "id": "felipedeleon11/slotknee-ablate-g10",
+  "id_no": 131720380,
+  "title": "slotknee-ablate-g10",
+  "code_file": "slotknee-ablate-g10.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [],
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "kernel_sources": [
+    "felipedeleon11/slotknee-cache-zoomc",
+    "felipedeleon11/slotknee-cache-g10t1",
+    "felipedeleon11/slotknee-cache-zoomj",
+    "felipedeleon11/slotknee-cache-g20a",
+    "felipedeleon11/slotknee-cache-g20b",
+    "felipedeleon11/slotknee-cache-g10t3a",
+    "felipedeleon11/slotknee-cache-g10t3b",
+    "felipedeleon11/slotknee-cache-g10t3c",
+    "felipedeleon11/slotknee-cache-g10t1-t35",
+    "felipedeleon11/slotknee-cache-zoomm",
+    "felipedeleon11/slotknee-ssl"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "model_sources": []
+}

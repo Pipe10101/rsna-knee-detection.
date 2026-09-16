@@ -1,0 +1,20 @@
+{
+  "id": "felipedeleon11/slotknee-decode-bench",
+  "title": "slotknee-decode-bench",
+  "code_file": "slotknee_decode_bench.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code",
+    "felipedeleon11/slotknee-wheels"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}

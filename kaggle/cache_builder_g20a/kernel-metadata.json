@@ -1,0 +1,19 @@
+{
+  "id": "felipedeleon11/slotknee-cache-g20a",
+  "title": "slotknee-cache-g20a",
+  "code_file": "cache_builder_g20a.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "false",
+  "dataset_sources": [
+    "felipedeleon11/slotknee-code"
+  ],
+  "competition_sources": [
+    "rsna-knee-abnormality-detection"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
