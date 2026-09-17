@@ -55,6 +55,14 @@ from src import infer as I
 # Helpers
 # ══════════════════════════════════════════════════════════════════════════
 
+def resolve_autocast_dtype(device):
+    if device.type == "cuda":
+        if torch.cuda.is_available() and torch.cuda.get_device_capability(device)[0] >= 8:
+            return torch.bfloat16
+        return torch.float16
+    return torch.bfloat16
+
+
 def pick_device(name=None):
     if name:
         return torch.device(name)

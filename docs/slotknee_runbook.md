@@ -1,8 +1,12 @@
 # SlotKnee-S runbook (how to run everything, and what each piece is for)
 
-Scoreboard: fold-0 single **0.799** → 5-fold T4 base **0.835** → coverage (g10t1) 2-member **0.866** public LB;
-5-fold coverage pooled OOF **0.8531** (full 5-member+TTA entry pending). Local pooled OOF on the LLM
-labels tracks the leaderboard ~1:1, so it is the decision metric (POLICY 1: final picks by OOF).
+Scoreboard: fold-0 single **0.799** → 5-fold T4 base **0.835** → coverage (g10t1) 2-member **0.866** →
+**two-band 16-epoch ensemble (central t35 + coverage g10t1, TTA) 0.905 public LB (2026-09-16)**, with the
+one full-fit distilled student at **0.907** in the efficiency track the same day. Pooled OOF of the
+accuracy entry is 0.8843 (0.8851 as the kernel actually combines), so the OOF→LB offset is +0.021.
+Local pooled OOF on the LLM labels is the decision metric (POLICY 1: final picks by OOF) — with the
+caveat the 2026-09-16 review raised: it cannot price TTA, fold-averaging or full-fit, and its gate
+cannot resolve deltas below ~0.004 (see `docs/red_team_20260916.md`).
 
 **The winning recipe** (reproducible from this repo alone): `slotknee-cache-builder-g10t1`
 (P=224, G=10, T=1, 140 mm crop) → `slotknee-train-g10` (5 folds × 8 ep, bs 8, seed 42,
@@ -1052,4 +1056,52 @@ student; the accuracy kernel's default glob is `*fold_*_best.pt` with `student_*
 
 **Expected LB** for this entry: ~0.895 by the OOF→LB offset seen so far (+0.013), higher if the forum's
 "LB > OOF" pattern holds. Efficiency entry unchanged (the student, v2 teacher).
+
+### 2026-09-17 — both entries scored; per-label band weights shipped; a full red-team review; and a directory wipe
+
+**Leaderboard.** The accuracy entry (two 16-epoch 5-fold bands, rank-averaged, TTA) scored **0.905**
+public; the efficiency entry (the single full-fit distilled student, TTA off) scored **0.907** the same
+day. They are inside the public split's noise (±0.005 on ~390 studies), but the direction matters: one
+model trained on all 4,407 studies ties ten fold models. Full-fit cannot be OOF-gated, so this stays an
+observation, not a rule — and the review below makes pre-registering the selection rule a priority.
+
+**Per-label band weights.** The 5-fold OOFs were re-stacked per label with nested left-one-fold-out
+validation: weights over (central, coverage) of ACL [0.95, 0.05], MCL [0.8, 0.2], Medial Meniscus
+[0.05, 0.95], Lateral Meniscus [1.0, 0.0], the rest near equal; +0.0010 pooled [+0.0005, +0.0015] vs
+equal weights, transferring +0.0010 twice to independent folds-0-1 models. Shipped as
+`stack_weights.json` in `slotknee-models` (the submit kernel globs `stack_weights*.json` and applies it
+with no code change; the log line `stack weights: … prefixes=['', 'g10t1']` confirms it loaded) and
+submitted as `slotknee-submit` v21. **The review flags this as a live risk**: +0.0010 is below the
+0.0023 gate, the weights are extreme on one label, and the file auto-applies to *any* future run of the
+kernel, including a re-score of an older submission. Rename it to an explicit `_ADOPTED` name, or pull
+it, until the LB read decides.
+
+**Red-team review — `docs/red_team_20260916.md`.** A systematic attempt to break the project along
+eight dimensions (validation, train/serve skew, labels, code, Kaggle operations, rules and licences,
+experimental design, documentation): **65 findings, 60 confirmed, 5 partial, 0 refuted** (4 critical,
+18 high after re-grading). Nothing found invalidates the two scored entries — the pixel path is
+bit-identical between cache and inference, the deployed checkpoints are byte-identical to the local
+ones, the fold split reproduces exactly, best epoch equals last epoch on every fold (so the OOFs carry
+no selection optimism), and the four large adopts are 7–14× any plausible noise. What it did establish:
+the gate cannot resolve what it has been asked to resolve (a null arm passes 11–15 % of the time; the
+expected best of 40 null arms is +0.0041, and every adopt since 09-06 sits inside that band); scanner
+grouping covers only 624 of 4,407 studies, the rest being report-hash singletons; the v4 label blend
+points ~1,750 cells the wrong way where reader A is confident and reader B is silent; and final
+selection and the release path are not pre-registered. The prioritised fix plan is section 4 of that
+document.
+
+**Directory wipe and recovery (2026-09-17, 04:33–06:23).** The project directory was reduced to a
+pre-pivot August snapshot: `.git`, `docs/`, `kaggle/`, `data_subset/` and every SlotKnee module were
+gone, and `src/` held the old Phase-1 pipeline. Recovered in place: all 153 tracked files from the
+GitHub remote at `b280f22`; the label files (`llm_labels_*`, `teacher_g10_*`, `train_gold.csv`,
+`fold_image_uids.txt`) from the `slotknee-code` dataset archive, which is the only copy of the
+gitignored `data_subset/labels_external`; and the competition CSVs from the competition API. A copy of
+`data_subset` and a full `git bundle` now live outside the Desktop. **Lost for good**: the uncommitted
+working tree (the unmeasured trainer changes, and the local `contrib/` and `backup/` branches) — which
+also removed the review's critical #1, since the restored trainer selects the best epoch on
+`val_auc_derived`, not the 12-study gold subset. **Still missing**: the 649 local DICOM studies under
+`data_subset/train_images`; they are only needed for local cache builds, and `fold_image_uids.txt`
+records exactly which uids they are, so the fold split is unaffected. A second process was observed
+writing into the directory during the recovery (recreating pre-pivot files at 06:19–06:22), so the tree
+is contested: check `git status` before trusting it.
 

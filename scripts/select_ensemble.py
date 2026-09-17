@@ -130,8 +130,10 @@ def main():
            "oos_gain_vs_best_single": round(gain, 5),
            "n_studies": len(uids), "runs": names}
     if a.out:
-        with open(a.out, "w") as fh:
+        tmp_out = a.out + ".tmp"
+        with open(tmp_out, "w") as fh:
             json.dump(out, fh, indent=2)
+        os.replace(tmp_out, a.out)
         print(f"\nwrote {a.out}")
 
 
