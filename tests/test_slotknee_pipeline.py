@@ -15,6 +15,13 @@ import torch
 from src.llm_labels import LABELS, y_col, w_col
 from src.slotknee import SlotKneeS
 
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Load the training script as a module (scripts/ is not a package).
@@ -128,6 +135,7 @@ def test_checkpoint_roundtrip(tmp_path):
 
 
 # pytest-timeout is not installed; the < 90 s budget is enforced by CI wall-clock.
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_slotknee_pipeline(tmp_path):
     """End-to-end micro-pipeline test in < 90s on CPU."""
     data_dir = "data_subset"

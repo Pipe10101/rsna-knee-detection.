@@ -14,6 +14,7 @@ Attached sources (kernel-metadata.json):
 Writes /kaggle/working/submission.csv.  A valid file is seeded from sample_submission.csv
 first (scripts/infer_slotknee.py does that itself), so a crash still leaves a scoreable file.
 """
+import json
 import glob
 import numpy as np
 import os
@@ -144,9 +145,13 @@ def main():
         hp = ck.get("hparams", {}); lay = ck.get("slot_layout") or {}
         # 2026-09-09: the anchor band (trim_frac) and crop size are part of the input layout too --
         # a t35 "central" fold grouped with a 0.15 fold would be decoded on the wrong slices.
+        # The key must separate every layout infer_slotknee._check_layouts separates, or a group's
+        # members get decoded with the first member's spec and infer exits, losing the whole group.
         key = (int(hp.get("P", 224)), int(hp.get("T", 3)), int(hp.get("n_slots", 6)), int(lay.get("G", 3)),
                str(lay.get("zoom_mm")), tuple(lay.get("zoom_slots") or ()),
-               float(lay.get("trim_frac", 0.15)), float(lay.get("crop_mm", 140.0)))
+               float(lay.get("trim_frac", 0.15)), float(lay.get("crop_mm", 140.0)),
+               str(lay.get("zoom_center", "image")), json.dumps(lay.get("zoom_spec"), sort_keys=True, default=str),
+               tuple(lay.get("slot_names") or ()))
         groups.setdefault(key, []).append(c)
         del ck
     print("layout groups:", {str(k): len(v) for k, v in groups.items()}, flush=True)
@@ -154,10 +159,13 @@ def main():
     # Per-label per-group stacking weights (scripts/stack_oof.py), shipped in the models
     # dataset as stack_weights*.json keyed by checkpoint filename prefix (g10t1/base224/...).
     # Anything missing or malformed -> equal weights, the previous behaviour.
-    import json
     stack = None
-    wfiles = sorted(glob.glob(os.path.join(ckpt_dir, "**", "stack_weights*.json"), recursive=True)
-                    or glob.glob(os.path.join(os.path.dirname(ckpt_dir), "stack_weights*.json")))
+    # 2026-09-17: the file must be named stack_weights_ADOPTED.json.  A weights file that merely sits
+    # in the models dataset used to be applied automatically, so an unscored, sub-gate fit (or a stale
+    # one) could silently change a re-scored submission -- including a re-run of an already-scored
+    # version.  Adoption is now a deliberate rename, and the applied file is echoed in the log.
+    wfiles = sorted(glob.glob(os.path.join(ckpt_dir, "**", "stack_weights_ADOPTED.json"), recursive=True)
+                    or glob.glob(os.path.join(os.path.dirname(ckpt_dir), "stack_weights_ADOPTED.json")))
     if wfiles:
         try:
             with open(wfiles[0]) as fh:
@@ -169,7 +177,7 @@ def main():
             print(f"stack weights unusable ({e}); equal weights", flush=True)
             stack = None
     else:
-        print("no stack_weights*.json in the models dataset; equal weights", flush=True)
+        print("no stack_weights_ADOPTED.json in the models dataset; equal weights over layout groups", flush=True)
 
     env = dict(os.environ, HF_HUB_OFFLINE="1", PYTHONUNBUFFERED="1")
     # A submission must never crash on the GPU lottery: Kaggle's PyTorch has no sm_60

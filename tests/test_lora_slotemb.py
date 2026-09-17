@@ -6,6 +6,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from src.slotknee import SlotKneeS, LoRALinear, LoRAConv2d   # noqa: E402
 
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
+
 
 def _tiny(**kw):
     return SlotKneeS(P=28, T=1, n_slots=6, max_groups=8, trainable_blocks=1, pretrained=False,
@@ -65,6 +72,7 @@ def test_slot_tok_embed_is_zero_init_and_receives_gradient():
     assert se.hparams["slot_tok_embed"] is True
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_lora_slotemb_micro_run(tmp_path):
     data_dir = "data_subset"
     if not os.path.isdir(os.path.join(ROOT, data_dir)):

@@ -8,6 +8,7 @@ so this file still runs inside a Kaggle notebook that only mounts the test set.
 """
 
 import os
+import pytest
 import sys
 import glob
 import json
@@ -24,6 +25,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.config import Config
 import src.kaggle_data as kd
+
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
 
 PASSED, FAILED, SKIPPED = [], [], []
 
@@ -77,6 +85,7 @@ LEGACY = dict(slice_order="filename", slice_selection="study_pooled",
 # 1. Slices are geometrically ordered BEFORE anything is trimmed or sampled
 # ══════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_series_are_sorted_by_image_position_not_filename():
     """The original defect: `all_dcm_paths.sort()` sorted SOP-Instance-UID
     filenames, which carry no anatomical meaning. Assert the shipped ordering
@@ -105,6 +114,7 @@ def test_series_are_sorted_by_image_position_not_filename():
     assert checked >= 5, f"only {checked} series had usable geometry"
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_filename_order_is_not_geometric_order():
     """The premise of the bug, asserted rather than assumed: if filename order
     ever DID match geometry this whole fix would be unnecessary."""
@@ -165,6 +175,7 @@ def test_selection_spans_the_full_medial_to_lateral_range():
         and idx[2] > 2 * n / 3, idx
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_plane_is_derived_from_image_orientation():
     """447/447 agreement against train_series.csv, so the fixed pipeline needs
     no CSV on the offline Kaggle test set."""
@@ -187,6 +198,7 @@ def test_plane_is_derived_from_image_orientation():
     assert total >= 10 and agree == total, f"plane agreement {agree}/{total}"
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_channels_have_a_stable_anatomical_meaning():
     """Legacy pooling drew channels from >1 plane in 95.8% of studies with the
     plane->channel mapping decided by UID hash. Assert plane_balanced gives
@@ -205,6 +217,7 @@ def test_channels_have_a_stable_anatomical_meaning():
     assert len(set(seen)) == 1, f"channel->plane mapping varies per study: {set(seen)}"
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_lazy_ordering_selects_exactly_what_eager_ordering_selects():
     """The cold-path optimisation: only the series that will be sampled are
     header-sorted. It must be a pure speedup, never a different selection."""
@@ -301,6 +314,7 @@ def test_cache_key_changes_when_the_slice_policy_changes():
             kd.selection_signature(cfg(**{a: b}), 3), a
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_cache_hits_on_the_second_pass():
     ids = real_studies(4)
     d = tempfile.mkdtemp(prefix="kdtest_hit_")
@@ -359,6 +373,7 @@ def test_augmentation_output_shape_and_dtype_are_invariant():
                     assert torch.isfinite(out).all(), "non-finite pixel in augmented tensor"
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_dataset_item_shape_and_dtype_are_invariant():
     ids = real_studies(4)
     d = tempfile.mkdtemp(prefix="kdtest_item_")
@@ -416,6 +431,7 @@ def test_slice_stack_is_transformed_as_one_registered_unit():
 # 4. The legacy policy still reproduces the pre-fix tensors bit-exactly
 # ══════════════════════════════════════════════════════════════════════════
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_legacy_knobs_reproduce_the_old_pooled_filename_selection():
     """A/B-ability: the old behaviour must remain reachable, exactly."""
     ids = real_studies(6)
@@ -438,6 +454,7 @@ def test_legacy_knobs_reproduce_the_old_pooled_filename_selection():
         assert kd.select_slice_paths(idx, 3, c) == want, sid
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_decode_is_bit_identical_to_the_reference_implementation():
     """The 1.53x decode speedup must not move a single grey level."""
     import pydicom
@@ -503,6 +520,7 @@ def test_plane_priority_is_total_and_deduplicated():
         ["Sagittal", "Coronal", "Axial"]
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_dataset_runs_against_a_config_that_predates_every_new_knob():
     """Every knob is read through _cfg/getattr, so an old Config must still
     work — train.py, infer.py and pseudo_label.py all construct their own."""

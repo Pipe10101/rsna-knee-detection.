@@ -247,12 +247,14 @@ def main():
             template = None
     if template is None:
         test_csv = os.path.join(args.data_dir, "test.csv")
-        ids = (pd.read_csv(test_csv)["StudyInstanceUID"].astype(str).tolist()
+        ids = (pd.read_csv(test_csv, dtype=str)["StudyInstanceUID"].astype(str).tolist()
                if os.path.exists(test_csv) else [])
         template = pd.DataFrame({"StudyInstanceUID": ids})
         for lab in LABELS:
             template[lab] = 0.5
-        template.to_csv(args.out, index=False)
+        tmp_out = args.out + ".tmp"
+        template.to_csv(tmp_out, index=False)
+        os.replace(tmp_out, args.out)
         if not os.path.exists(sample_sub):
             print(f"Warning: {sample_sub} not found; template built from test.csv.")
     id_col = template.columns[0]
@@ -265,9 +267,12 @@ def main():
         uids = [str(u) for u in cache.uids]
 
         def _cache_stream():
+            # flush() treats the first element as the LIST of anchor-shift tensors (the DICOM path
+            # yields one entry per shift), so a bare array made it read len(x) as the shift count and
+            # crash; every study then kept its seeded 0.5 row and the run still exited 0.
             for i in range(cache.N):
                 x, mask = cache[i]
-                yield np.asarray(x), np.asarray(mask), 0.0, None
+                yield [np.asarray(x)], np.asarray(mask), 0.0, None
         results = _cache_stream()
     else:
         test_images_dir = os.path.join(args.data_dir, "test_images")
@@ -432,11 +437,19 @@ def main():
     total_sec = time.time() - t_start
     proj_sec = (total_sec / max(1, done)) * 1300
 
+    frac = len(failures) / max(1, n_total)
     print(f"\nInference complete. {n_pred}/{n_total} studies predicted, "
-          f"{len(failures)} failed (kept at 0.5).")
+          f"{len(failures)} failed ({frac:.1%}, kept at 0.5).")
     for uid, err in failures[:10]:
         print(f"  FAILED {uid}: {err}")
     print(f"Decode ms/study: {decode_ms_total / max(1, done):.1f}")
+    # A handful of unreadable studies is normal; a systematic naming/layout difference on the hidden
+    # set is not, and a 0.5 row scores as a coin flip while the run still reports success.  Fail loudly
+    # instead: the submit kernel keeps the seeded submission it wrote before inference started.
+    if len(failures) > max(2, int(0.02 * n_total)):
+        print(f"FATAL: {len(failures)}/{n_total} studies failed to decode ({frac:.1%} > 2%); "
+              "the submission would be 0.5 on those rows.  Check the test layout / decoder.", flush=True)
+        sys.exit(3)
     print(f"Model ms/study:  {state['model_ms'] / max(1, n_pred):.1f}")
     print(f"Total seconds:   {total_sec:.1f}")
     print(f"Projected 1300:  {proj_sec:.1f}s")

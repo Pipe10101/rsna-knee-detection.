@@ -12,13 +12,15 @@ sys.path.insert(0, ROOT)
 from src import slots                                   # noqa: E402
 
 DATA_DIR = os.path.join(ROOT, "data_subset")
+# these tests build a cache from real DICOMs, so they need the image subset, not just the CSVs
+HAVE_IMAGES = os.path.isdir(os.path.join(DATA_DIR, "train_images")) or os.path.isdir(os.path.join(DATA_DIR, "train_series"))
 BUILDER = os.path.join(ROOT, "scripts", "build_slot_cache.py")
 TRAINER = os.path.join(ROOT, "scripts", "train_slotknee.py")
 _spec = importlib.util.spec_from_file_location("infer_slotknee", os.path.join(ROOT, "scripts", "infer_slotknee.py"))
 infer = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(infer)
 
 
-@pytest.mark.skipif(not os.path.isdir(DATA_DIR), reason="data_subset not available locally")
+@pytest.mark.skipif(not HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_slot_layout_round_trips_trim_frac_and_crop_mm(tmp_path):
     cache = str(tmp_path / "cache_t35")
     subprocess.run([sys.executable, BUILDER, "--data-dir", DATA_DIR, "--split", "train", "--out", cache,
@@ -46,7 +48,7 @@ def test_slot_layout_round_trips_trim_frac_and_crop_mm(tmp_path):
     assert np.array_equal(np.asarray(c[0][0]), x35)
 
 
-@pytest.mark.skipif(not os.path.isdir(DATA_DIR), reason="data_subset not available locally")
+@pytest.mark.skipif(not HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_infer_refuses_mixed_layout_checkpoints(tmp_path):
     """Members trained on different anchor bands (or any other layout key) must not be scored on
     one decode: _check_layouts exits naming the offender; identical layouts pass."""

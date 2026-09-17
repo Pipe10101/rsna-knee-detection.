@@ -6,9 +6,17 @@ runs end to end, scores both read-outs, and writes an OOF-style npz.
 import json, os, subprocess, sys
 import numpy as np, pytest
 
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_rescore_oof_micro(tmp_path):
     data_dir = "data_subset"
     if not os.path.isdir(os.path.join(ROOT, data_dir)):

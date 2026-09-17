@@ -18,6 +18,13 @@ import torch
 from src.slotknee import SlotKneeS
 from src.slots import SlotCache
 
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT = os.path.join(ROOT, "scripts", "ssl_pretrain.py")
 BUILDER = os.path.join(ROOT, "scripts", "build_slot_cache.py")
@@ -30,8 +37,8 @@ _spec.loader.exec_module(ssl_pretrain)
 
 @pytest.fixture(scope="module")
 def tiny_cache(tmp_path_factory):
-    if not os.path.isdir(DATA_DIR):
-        pytest.skip("data_subset not available locally")
+    if not _HAVE_IMAGES:
+        pytest.skip("data_subset/train_images not present")
     out = str(tmp_path_factory.mktemp("ssl") / "cache")
     subprocess.run([sys.executable, BUILDER, "--data-dir", DATA_DIR, "--split", "train", "--out", out,
                     "--limit", "3", "--P", "224", "--workers", "1"], check=True, cwd=ROOT)

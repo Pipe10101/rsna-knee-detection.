@@ -16,6 +16,9 @@ import importlib.util
 spec = importlib.util.spec_from_file_location("rescore_oof", os.path.join(ROOT, "scripts", "rescore_oof.py"))
 rescore = importlib.util.module_from_spec(spec); spec.loader.exec_module(rescore)
 
+HAVE_IMAGES = os.path.isdir(os.path.join(ROOT, "data_subset", "train_images")) or \
+              os.path.isdir(os.path.join(ROOT, "data_subset", "train_series"))
+
 SLOTS = ["SAG_FS", "COR_FS", "AX_FS", "SAG_T1", "COR_T1", "AX_T1"]
 
 
@@ -57,6 +60,7 @@ def test_trainer_mirror_uses_kept_slot_names(tmp_path):
     assert torch.equal(ds._mirror(x), x.flip(1))                            # sagittal: anchor axis
 
 
+@pytest.mark.skipif(not HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_flip_swap_micro_run(tmp_path):
     """--flip-swap 0.5 trains end to end on the 6-study fixture; --flip-tta rescoring runs on its output."""
     data_dir = "data_subset"

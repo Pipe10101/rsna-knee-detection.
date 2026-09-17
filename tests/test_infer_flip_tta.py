@@ -1,5 +1,6 @@
 """infer_slotknee.py --flip-tta: the submission path scores the laterality-mirrored study too."""
-import os, sys, subprocess
+import os
+import pytest, sys, subprocess
 import numpy as np, pandas as pd, pytest, torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -9,6 +10,13 @@ spec = importlib.util.spec_from_file_location("infer_slotknee", os.path.join(ROO
 infer = importlib.util.module_from_spec(spec); spec.loader.exec_module(infer)
 from src import slots as S                                    # noqa: E402
 from src.llm_labels import LABELS                             # noqa: E402
+
+_ROOT_FOR_IMAGES = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Tests below build a cache from real DICOMs: skip when the image subset is absent (the CSVs
+# and label files can be present without it).
+_HAVE_IMAGES = os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_images")) or \
+               os.path.isdir(os.path.join(_ROOT_FOR_IMAGES, "data_subset", "train_series"))
+
 
 
 def test_infer_mirror_matches_cache_normalisation_and_perm_is_involution():
@@ -21,6 +29,7 @@ def test_infer_mirror_matches_cache_normalisation_and_perm_is_involution():
     assert LABELS[perm[LABELS.index("Lateral OA")]] == "Medial OA" and perm[LABELS.index("ACL")] == LABELS.index("ACL")
 
 
+@pytest.mark.skipif(not _HAVE_IMAGES, reason="data_subset/train_images not present")
 def test_infer_flip_tta_micro(tmp_path):
     data_dir = "data_subset"
     if not os.path.isdir(os.path.join(ROOT, data_dir)):

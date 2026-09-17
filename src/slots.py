@@ -465,13 +465,20 @@ def _list_series(study_dir: str) -> List[Tuple[str, List[str]]]:
         entries = sorted(os.scandir(study_dir), key=lambda e: e.name)
     except OSError:
         return out
+    def _dicom_names(scan):
+        # Prefer .dcm, but accept extension-less files: the hidden test set is not guaranteed to use
+        # the same naming as train_series, and an empty series list silently yields a 0.5 row.
+        fs = [f for f in scan if f.is_file()]
+        named = [f for f in fs if f.name.lower().endswith(".dcm")]
+        return named or [f for f in fs if "." not in f.name and not f.name.startswith(".")]
+
     for e in entries:
         if e.is_dir():
-            files = sorted(os.path.join(e.path, f.name) for f in os.scandir(e.path)
-                           if f.is_file() and f.name.lower().endswith(".dcm"))
+            files = sorted(os.path.join(e.path, f.name) for f in _dicom_names(os.scandir(e.path)))
             if files:
                 out.append((e.name, files))
-        elif e.is_file() and e.name.lower().endswith(".dcm"):
+        elif e.is_file() and (e.name.lower().endswith(".dcm")
+                              or ("." not in e.name and not e.name.startswith("."))):
             flat.append(e.path)
     if flat and not out:
         out.append((os.path.basename(os.path.normpath(study_dir)), sorted(flat)))

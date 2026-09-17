@@ -187,6 +187,13 @@ def build_groups(df: pd.DataFrame, data_dir: str, image_dir: str = "train_images
         fp = scanner_fingerprint(os.path.join(root, uid), freq_decimals) \
             if os.path.isdir(os.path.join(root, uid)) else UNKNOWN
         groups.append("s:" + fp if fp != UNKNOWN else "r:" + h)
+    # Scanner hold-out only covers studies whose DICOMs are on this disk; every other study falls back
+    # to its report hash, which is a singleton for almost all of them, i.e. a stratified random split.
+    # Say so: the OOF guarantee is "scanner-grouped for the covered fraction", not for the whole set.
+    n_scanner = sum(1 for g in groups if g.startswith("s:"))
+    print("[folds] scanner-grouped %d/%d studies (%.0f%%) in %d scanner groups; the rest are "
+          "report-hash groups (mostly singletons)" % (n_scanner, len(groups),
+          100.0 * n_scanner / max(1, len(groups)), len({g for g in groups if g.startswith("s:")})), flush=True)
     return pd.Series(groups, index=df.index, name="group")
 
 
